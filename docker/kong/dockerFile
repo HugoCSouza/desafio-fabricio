@@ -1,0 +1,25 @@
+FROM kong:2.8-alpine
+
+LABEL description="Kong 2.8 + kong-oidc plugin on Alpine"
+
+# Garantir que estamos executando como root
+USER root
+
+# Atualizar os repositórios e instalar dependências necessárias
+RUN apk update && apk add --no-cache \
+    git \
+    unzip \
+    build-base \
+    openssl-dev \
+    luarocks
+
+# Instalar o plugin kong-oidc
+RUN luarocks install kong-oidc
+
+# Expor as portas do Kong
+EXPOSE 8000 8443 8001 8444
+
+# Voltar para o usuário padrão do contêiner, se necessário
+# USER kong
+
+CMD ["kong", "docker-start"]

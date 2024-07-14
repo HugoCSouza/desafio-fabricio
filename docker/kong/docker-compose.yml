@@ -1,0 +1,123 @@
+networks: 
+  kong-net:
+  keycloak-net:
+
+volumes:
+  kong-datastore:
+  keycloak-datastore:
+
+services:
+  kong:
+    image: kong:0.14-centos-oidc
+    depends_on:
+      - db
+    networks:
+      - kong-net
+    ports:
+      - "8000:8000" # Listener
+      - "8001:8001" # Admin API
+      - "8443:8443" # Listener  (SSL)
+      - "8444:8444" # Admin API (SSL)
+    environment:
+      KONG_DATABASE:         postgres
+      KONG_PG_HOST:          db
+      KONG_PG_PORT:          5432
+      KONG_PG_USER:          kong
+      KONG_PG_PASSWORD:      kong
+      KONG_PG_DATABASE:      kong
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG:  /dev/stderr
+      KONG_ADMIN_ERROR_LOG:  /dev/stderr
+      KONG_PROXY_LISTEN:     0.0.0.0:8000, 0.0.0.0:8443 ssl
+      KONG_ADMIN_LISTEN:     0.0.0.0:8001, 0.0.0.0:8444 ssl
+      KONG_PLUGINS:          oidc
+  
+  db:
+    image: postgres:9.6
+    container_name: banco_dados_NOSQL
+    networks:
+      - kong-net
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: kong
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: kong
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "pg_isready",
+          "-d",
+          "kong",
+          "-U",
+          "kong"
+        ]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  kong-migration:
+    image: kong:0.14-centos-oidc
+    command: kong migrations bootstrap
+    networks:
+      - kong-net
+    restart: on-failure
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: db
+      KONG_PG_DATABASE: kong
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+    depends_on:
+      - db       
+  keycloak-db:
+    image: postgres:9.6
+    container_name: banco_dados_acesso
+    volumes: 
+      - keycloak-datastore:/var/lib/postresql/data
+    networks:
+      - keycloak-net
+    ports:
+      - "25432:5432"
+    environment:
+      POSTGRES_DB:       keycloak
+      POSTGRES_USER:     keycloak
+      POSTGRES_PASSWORD: password
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:18.0.2 
+    command: start-dev
+    depends_on:
+      - keycloak-db
+    networks:
+      - keycloak-net
+    ports:
+      - "8180:8080"
+    environment:
+        DB_ADDR: keycloak-db
+        DB_VENDOR: postgres
+        DB_USER: postgres
+        DB_PASSWORD: postgres
+        KEYCLOAK_ADMIN: admin
+        KEYCLOAK_ADMIN_PASSWORD: admin
+        #command: tail -f /dev/null
+
+
+# volumes:
+#   declarative_volume:
+#   tmp_volume:
+#   prefix_volume:
+
+# Windows
+
+# C:\Windows\System32\drivers\etc\hosts (bloco de notas em modo admin)
+
+# 127.0.0.1 host.docker.internal
+
+# Linux ou Mac
+
+# /etc/hosts (editar como admin)
+
+# 127.0.0.1 host.docker.internal

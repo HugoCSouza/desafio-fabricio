@@ -71,7 +71,8 @@ services:
       KONG_PG_USER: kong
       KONG_PG_PASSWORD: kong
     depends_on:
-      - db       
+      - db    
+         
   keycloak-db:
     image: postgres:9.6
     container_name: banco_dados_acesso
@@ -103,21 +104,3 @@ services:
         KEYCLOAK_ADMIN: admin
         KEYCLOAK_ADMIN_PASSWORD: admin
         #command: tail -f /dev/null
-
-
-# volumes:
-#   declarative_volume:
-#   tmp_volume:
-#   prefix_volume:
-
-# Windows
-
-# C:\Windows\System32\drivers\etc\hosts (bloco de notas em modo admin)
-
-# 127.0.0.1 host.docker.internal
-
-# Linux ou Mac
-
-# /etc/hosts (editar como admin)
-
-# 127.0.0.1 host.docker.internal

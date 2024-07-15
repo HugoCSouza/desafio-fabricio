@@ -15,6 +15,8 @@ O docker compose é o arquivo que contem as instruções e configurações para 
 
 Depois de buildar a imagem, faça primeiro a inicialização do container pelo db
 
+### Kong
+
 ``` CLI
 docker compose -f .\docker\kong\docker-compose.yml up db
 ```
@@ -22,7 +24,7 @@ docker compose -f .\docker\kong\docker-compose.yml up db
 Depois crie a migration para conexão do kong com o banco de dados
 
 ```CLI
-docker compose -f .\docker\kong\docker-compose.yml up kong-migrations
+docker compose -f .\docker\kong\docker-compose.yml up kong-migration
 ```
 
 vai ter a resposta tal ... 
@@ -30,7 +32,7 @@ vai ter a resposta tal ...
 Dai, tu suba o kong.
 
 ```CLI
-docker compose -f .\docker\kong\docker-compose.yml up kong
+docker compose -f .\docker\kong\docker-compose.yml up kong -d
 ```
 
 Tente verificar se o kong subiu via web ou curl através do <http://localhost:8001>. Verificado que o kong está online, verifique a conexão do kong com o banco de dados, utilizando o curl.
@@ -103,7 +105,7 @@ Com essa resposta, usaremos para criar uma rota, através do ID.
 $uri = "http://localhost:8001/routes"
 
 $body = @{
-    "service.id" = "6d8b4780-f609-457d-acea-afe814f34279"
+    "service.id" = "50e6ab7b-779b-495a-b8f3-c92d25ee77bd"
     "paths[]" = "/mock"
 }
 
@@ -157,10 +159,27 @@ Verificando, se tudo ocorreu corretamente, faça um cURL na rota:
 
 $uri = "http://localhost:8000/mock"
 
-$response = Invoke-RestMethod  -Uri $uri -Method Get     
+$response = Invoke-WebRequest  -Uri $uri -Method Get     
 
 $responseJson = $response |ConvertTo-Json -Depth 10
 
 Write-Output $formattedResponse
 
 ```
+
+### Keycloak
+Configurado seu docker-compose corretamente, suba primeiro o banco de dados do keycloak
+
+```CLI
+docker composer -f .\docker\kong\docker-compose.yml up keycloak-db -d
+```
+
+Após verificar que tudo está correto e que o banco de dados subiu corretamente no container, suba o keycloak.
+
+```CLI
+docker composer -f .\docker\kong\docker-compose.yml up keycloak -d
+```
+
+Após isso faz as confirações do site lá;
+
+### OIDC

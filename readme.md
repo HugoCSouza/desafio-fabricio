@@ -18,7 +18,7 @@ Depois de buildar a imagem, faça primeiro a inicialização do container pelo d
 ### Kong
 
 ``` CLI
-docker compose -f .\docker\kong\docker-compose.yml up db
+docker compose -f .\docker\kong\docker-compose.yml up db -d
 ```
 
 Depois crie a migration para conexão do kong com o banco de dados
@@ -48,7 +48,7 @@ $json.plugins.available_on_server.oidc
 
 O comando Invoke-Webrequest vai fazendo um solicitação HTTP a URI/URL informada como argumento após o argumento nomeado "-Uri" e armazena na variável *response*. Após isso, pega o conteudo da variável e converte para json e armazena na varíavel *json*. Então, se verifica se o Plugin OIDC está disponivel dentro do Kong. Se a resposta destes comandos foi "True", o serviço está ativo.
 
-Verificado se o plugin está funcionando, crie os serviços e rotas para conectar o Kong ao Mockbin, plugin responsável por criar(mockar) endpoints para testar a API. Para criar a primeira rota:
+Verificado se o plugin está funcionando, crie os serviços e rotas para conectar o Kong ao Mockbin, plugin responsável por criar(mocar, criar objetos que simulem o consumo da API) endpoints para testar a API. Para criar a primeira rota:
 
 ```CLI
 # Execute uma linha por vez
@@ -171,15 +171,59 @@ Write-Output $formattedResponse
 Configurado seu docker-compose corretamente, suba primeiro o banco de dados do keycloak
 
 ```CLI
-docker composer -f .\docker\kong\docker-compose.yml up keycloak-db -d
+docker compose -f .\docker\kong\docker-compose.yml up keycloak-db -d
 ```
 
 Após verificar que tudo está correto e que o banco de dados subiu corretamente no container, suba o keycloak.
 
 ```CLI
-docker composer -f .\docker\kong\docker-compose.yml up keycloak -d
+docker compose -f .\docker\kong\docker-compose.yml up keycloak -d
 ```
 
 Após isso faz as confirações do site lá;
 
 ### OIDC
+
+Para configurar o OIDC (plugin de autenticação), é preciso fornecer a ele, o Client ID, o Cliente Secret e o endpoint discovery.  Para acessar o discovery endpoint, que é onde o kong irá pegar informaçãoes para a autenticação, execute as linhas abaixo.
+
+```CLI
+# Execute uma linha por vez
+
+$uri = "http://localhost:8180/realms/master/.well-known/openid-configuration"
+
+$response = Invoke-RestMethod -Uri $uri -Method Get
+
+$formattedResponse = $response | ConvertTo-Json -Depth 10
+
+Write-Output $formattedResponse
+
+```
+
+Por estar "Conteinerizado", cada imagem está no seu proprio container, portanto, o localhost do kong só é acessivel a ele mesmo. Para permiti-lo acessar o keycloack para fazer a verificação de ID, encontre o ip da sua maquina, o secret do keycloak para endereçar para o kong
+
+```CLI
+$host_ip = "192.168.100.15" #Descubra seu ip com ipconfig
+
+$secret_client = "mKcDAbwyQy1rorkka4ZgUvLqSat9UgAm" #Está no keycloak no client criado "kong"
+
+$uri = "http://localhost:8001/plugins"
+
+$body = @{
+    name = "oidc"
+    config = @{
+        client_id = "kong"
+        client_secret = ${secret_client}
+        discovery = "http://${host_ip}:8180/realms/master/.well-known/openid-configuration"
+    }
+}
+$jsonBody = $body | ConvertTo-Json
+
+$response = Invoke-WebRequest -Uri $uri -Method POST -Body $jsonBody -ContentType "application/json"
+
+$json = $response.Content | ConvertFrom-Json
+
+$formattedResponse = $json | ConvertTo-Json -Depth 10
+
+Write-Output $formattedResponse
+
+```

@@ -13,6 +13,8 @@ O docker compose é o arquivo que contem as instruções e configurações para 
 - 8000 : Acesso ao gateway de entrada
 - 8001 : API Admin
 
+### Configuração e Inicialização da imagem docker
+
 Depois de buildar a imagem, faça primeiro a inicialização do container pelo db
 
 ### Kong
@@ -27,7 +29,7 @@ Depois crie a migration para conexão do kong com o banco de dados
 docker compose -f .\docker\kong\docker-compose.yml up kong-migration
 ```
 
-vai ter a resposta tal ... 
+vai ter a resposta tal ...
 
 Dai, tu suba o kong.
 
@@ -56,8 +58,8 @@ Verificado se o plugin está funcionando, crie os serviços e rotas para conecta
 $uri = "http://localhost:8001/services"
 
 $body = @{
-    name = "mock-service"
-    url = "http://mockbin.org/request"
+    name = "openid-connect"
+    url = "http://httpbin.org/anything"
 }
 
 $headers = @{
@@ -102,11 +104,11 @@ Com essa resposta, usaremos para criar uma rota, através do ID.
 ```CLI
 # Execute uma linha por vez
 
-$uri = "http://localhost:8001/routes"
+$uri = "http://localhost:8001/services/openid-connect/routes"
 
 $body = @{
-    "service.id" = "50e6ab7b-779b-495a-b8f3-c92d25ee77bd"
-    "paths[]" = "/mock"
+    "name" = "openid-connect"
+    "paths[]" = "/"
 }
 
 $response = Invoke-WebRequest -Uri $uri -Method POST -Body $body
@@ -168,6 +170,7 @@ Write-Output $formattedResponse
 ```
 
 ### Keycloak
+
 Configurado seu docker-compose corretamente, suba primeiro o banco de dados do keycloak
 
 ```CLI
@@ -227,3 +230,7 @@ $formattedResponse = $json | ConvertTo-Json -Depth 10
 Write-Output $formattedResponse
 
 ```
+
+### Insomnia
+
+Como ao tentar mockar via mockbin não foi possível, é apresentado no site uma alternativa chamada Insomnia. É um app para realizar mockagens para endpoins e fazer requisições HTTP para testar APIs (Estilo PostMan). Baixe o [Insomnia](https://insomnia.rest/download) no site oficial e instale no seu SO.

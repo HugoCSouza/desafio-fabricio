@@ -15,26 +15,24 @@ O docker compose é o arquivo que contem as instruções e configurações para 
 
 ### Configuração e Inicialização da imagem docker
 
-Depois de buildar a imagem, faça primeiro a inicialização do container pelo db
-
-### Kong
+Depois de buildar a imagem, faça primeiro a inicialização do container pelos bancos de dados, tanto do kong quanto do keycloack
 
 ``` CLI
-docker compose -f .\docker\kong\docker-compose.yml up db -d
+docker compose -f .\docker\kong\docker-compose.yml up db keycloak-db -d
 ```
+
+### Kong
 
 Depois crie a migration para conexão do kong com o banco de dados
 
 ```CLI
-docker compose -f .\docker\kong\docker-compose.yml up kong-migration
+docker compose -f .\docker\kong\docker-compose.yml up kong-migration -d
 ```
 
-vai ter a resposta tal ...
-
-Dai, tu suba o kong.
+A migration irá iniciar e finalizar, é o normal. Ela cria os caminhos de conexão entre o Kong e o banco de dados. Dai, tu suba o kong e o Keycloak.
 
 ```CLI
-docker compose -f .\docker\kong\docker-compose.yml up kong -d
+docker compose -f .\docker\kong\docker-compose.yml up kong keycloak -d
 ```
 
 Tente verificar se o kong subiu via web ou curl através do <http://localhost:8001>. Verificado que o kong está online, verifique a conexão do kong com o banco de dados, utilizando o curl.
@@ -50,7 +48,7 @@ $json.plugins.available_on_server.oidc
 
 O comando Invoke-Webrequest vai fazendo um solicitação HTTP a URI/URL informada como argumento após o argumento nomeado "-Uri" e armazena na variável *response*. Após isso, pega o conteudo da variável e converte para json e armazena na varíavel *json*. Então, se verifica se o Plugin OIDC está disponivel dentro do Kong. Se a resposta destes comandos foi "True", o serviço está ativo.
 
-Verificado se o plugin está funcionando, crie os serviços e rotas para conectar o Kong ao Mockbin, plugin responsável por criar(mocar, criar objetos que simulem o consumo da API) endpoints para testar a API. Para criar a primeira rota:
+Verificado se o plugin está funcionando, crie os serviços e rotas para conectar o Kong ao gateway.
 
 ```CLI
 # Execute uma linha por vez
@@ -78,28 +76,28 @@ Nos variáveis body e headers, o @ é utilizado para definir uma tabela hash (ch
 
 ```Json
 {
-    "write_timeout":  60000,
-    "created_at":  1720974560,
-    "tls_verify":  null,
-    "retries":  5,
-    "path":  "/request",
-    "tls_verify_depth":  null,
     "port":  80,
+    "updated_at":  1721522138,
     "client_certificate":  null,
-    "id":  "6d8b4780-f609-457d-acea-afe814f34279",
     "protocol":  "http",
-    "ca_certificates":  null,
+    "name":  "openid-connect",
     "connect_timeout":  60000,
-    "enabled":  true,
     "read_timeout":  60000,
-    "name":  "mock-service",
+    "path":  "/anything",
+    "enabled":  true,
+    "host":  "httpbin.org",
+    "id":  "5f23bbf2-a215-4bdc-9d26-d022c4e00a60",
+    "tls_verify_depth":  null,
+    "created_at":  1721522138,
+    "retries":  5,
+    "write_timeout":  60000,
     "tags":  null,
-    "host":  "mockbin.org",
-    "updated_at":  1720974560
+    "ca_certificates":  null,
+    "tls_verify":  null
 }
 ```
 
-Com essa resposta, usaremos para criar uma rota, através do ID.
+Com essa resposta, usaremos para criar uma rota, através do para o serviço de conexão.
 
 ```CLI
 # Execute uma linha por vez
@@ -123,67 +121,38 @@ E terá como resposta, um arquivo Json
 
 ```JSON
 {
+    "created_at":  1721522166,
+    "updated_at":  1721522166,
+    "name":  "openid-connect",
+    "service":  {
+                    "id":  "5f23bbf2-a215-4bdc-9d26-d022c4e00a60"
+                },
+    "path_handling":  "v0",
+    "regex_priority":  0,
     "https_redirect_status_code":  426,
+    "headers":  null,
+    "request_buffering":  true,
+    "response_buffering":  true,
+    "id":  "09e28a69-f115-4470-95b7-4dc81d425add",
+    "methods":  null,
     "hosts":  null,
-    "created_at":  1720982646,
+    "preserve_host":  false,
+    "destinations":  null,
+    "snis":  null,
+    "strip_path":  true,
+    "sources":  null,
+    "tags":  null,
+    "paths":  [
+                  "/"
+              ],
     "protocols":  [
                       "http",
                       "https"
-                  ],
-    "headers":  null,
-    "snis":  null,
-    "id":  "a5b3d33b-b07b-4ea7-a283-1b3f0c05c5a4",
-    "regex_priority":  0,
-    "tags":  null,
-    "service":  {
-                    "id":  "6d8b4780-f609-457d-acea-afe814f34279"
-                },
-    "response_buffering":  true,
-    "request_buffering":  true,
-    "strip_path":  true,
-    "destinations":  null,
-    "updated_at":  1720982646,
-    "path_handling":  "v0",
-    "preserve_host":  false,
-    "paths":  [
-                  "/mock"
-              ],
-    "methods":  null,
-    "sources":  null,
-    "name":  null
+                  ]
 }
 ```
 
-Verificando, se tudo ocorreu corretamente, faça um cURL na rota:
-
-```CLI
-# Execute uma linha por vez
-
-$uri = "http://localhost:8000/mock"
-
-$response = Invoke-WebRequest  -Uri $uri -Method Get     
-
-$responseJson = $response |ConvertTo-Json -Depth 10
-
-Write-Output $formattedResponse
-
-```
-
-### Keycloak
-
-Configurado seu docker-compose corretamente, suba primeiro o banco de dados do keycloak
-
-```CLI
-docker compose -f .\docker\kong\docker-compose.yml up keycloak-db -d
-```
-
-Após verificar que tudo está correto e que o banco de dados subiu corretamente no container, suba o keycloak.
-
-```CLI
-docker compose -f .\docker\kong\docker-compose.yml up keycloak -d
-```
-
-Após isso faz as confirações do site lá;
+Após isso, deve-se configurar a sessão de autenticação do Kong via Keycloak. Para isso será necessário o ID do client service.
 
 ### OIDC
 
@@ -207,7 +176,7 @@ Por estar "Conteinerizado", cada imagem está no seu proprio container, portanto
 ```CLI
 $host_ip = "192.168.100.15" #Descubra seu ip com ipconfig
 
-$secret_client = "mKcDAbwyQy1rorkka4ZgUvLqSat9UgAm" #Está no keycloak no client criado "kong"
+$secret_client = "wezXLgiseeeKCz0W6KnnKQoteVt1wbT7" #Está no keycloak no client criado "kong"
 
 $uri = "http://localhost:8001/plugins"
 
@@ -228,6 +197,30 @@ $json = $response.Content | ConvertFrom-Json
 $formattedResponse = $json | ConvertTo-Json -Depth 10
 
 Write-Output $formattedResponse
+
+```
+
+### Conexão
+
+```CLI
+# Execute uma linha por vez
+
+# 
+$user = "user"
+$password = "123"
+$url = "http://localhost:8000"
+$cookieFile = "example-user"
+
+# Crie uma instância de WebRequest com autenticação e cookies
+Invoke-WebRequest -Uri $url -Credential (New-Object PSCredential($user, (ConvertTo-SecureString $password -AsPlainText -Force))) -SessionVariable webSession
+
+# Salve os cookies da requisição
+$cookies = $webSession.Cookies.GetCookies($url)
+
+$cookies | ForEach-Object {
+    "$($_.Name)=$($_.Value)"
+} | Out-File -FilePath $cookieFile
+
 
 ```
 

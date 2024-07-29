@@ -35,7 +35,7 @@ A migration irá iniciar e finalizar, é o normal. Ela cria os caminhos de conex
 docker compose -f .\docker\kong\docker-compose.yml up kong keycloak -d
 ```
 
-Tente verificar se o kong subiu via web ou curl através do <http://localhost:8001>. Verificado que o kong está online, verifique a conexão do kong com o banco de dados, utilizando o curl.
+Tente verificar se o kong subiu via web ou curl através do <http://localhost:8001>. Verificado que o kong está online, se o plugin de openID connecition (serviço de autenticação está online). Caso não, verifique a build da sua imagem.
 
 ```CLI
 # Execute uma linha por vez
@@ -76,23 +76,23 @@ Nos variáveis body e headers, o @ é utilizado para definir uma tabela hash (ch
 
 ```Json
 {
-    "port":  80,
-    "updated_at":  1721522138,
-    "client_certificate":  null,
-    "protocol":  "http",
-    "name":  "openid-connect",
-    "connect_timeout":  60000,
-    "read_timeout":  60000,
-    "path":  "/anything",
-    "enabled":  true,
     "host":  "httpbin.org",
-    "id":  "5f23bbf2-a215-4bdc-9d26-d022c4e00a60",
     "tls_verify_depth":  null,
-    "created_at":  1721522138,
-    "retries":  5,
-    "write_timeout":  60000,
     "tags":  null,
+    "path":  "/anything",
+    "retries":  5,
+    "port":  80,
+    "client_certificate":  null,
+    "updated_at":  1722201439,
+    "created_at":  1722201439,
+    "id":  "8292a3eb-67f7-45f8-9fa9-1968f259a8c3",
+    "read_timeout":  60000,
+    "connect_timeout":  60000,
+    "protocol":  "http",
+    "write_timeout":  60000,
+    "enabled":  true,
     "ca_certificates":  null,
+    "name":  "openid-connect",
     "tls_verify":  null
 }
 ```
@@ -121,34 +121,34 @@ E terá como resposta, um arquivo Json
 
 ```JSON
 {
-    "created_at":  1721522166,
-    "updated_at":  1721522166,
-    "name":  "openid-connect",
-    "service":  {
-                    "id":  "5f23bbf2-a215-4bdc-9d26-d022c4e00a60"
-                },
-    "path_handling":  "v0",
-    "regex_priority":  0,
-    "https_redirect_status_code":  426,
-    "headers":  null,
-    "request_buffering":  true,
-    "response_buffering":  true,
-    "id":  "09e28a69-f115-4470-95b7-4dc81d425add",
-    "methods":  null,
-    "hosts":  null,
-    "preserve_host":  false,
     "destinations":  null,
     "snis":  null,
-    "strip_path":  true,
-    "sources":  null,
     "tags":  null,
-    "paths":  [
-                  "/"
-              ],
+    "headers":  null,
     "protocols":  [
                       "http",
                       "https"
-                  ]
+                  ],
+    "name":  "openid-connect",
+    "request_buffering":  true,
+    "regex_priority":  0,
+    "service":  {
+                    "id":  "8292a3eb-67f7-45f8-9fa9-1968f259a8c3"
+                },
+    "path_handling":  "v0",
+    "updated_at":  1722201489,
+    "created_at":  1722201489,
+    "id":  "8e4be3da-b323-40a8-9da9-81a9e9178bbf",
+    "hosts":  null,
+    "response_buffering":  true,
+    "strip_path":  true,
+    "https_redirect_status_code":  426,
+    "preserve_host":  false,
+    "paths":  [
+                  "/"
+              ],
+    "methods":  null,
+    "sources":  null
 }
 ```
 
@@ -176,7 +176,7 @@ Por estar "Conteinerizado", cada imagem está no seu proprio container, portanto
 ```CLI
 $host_ip = "192.168.100.15" #Descubra seu ip com ipconfig
 
-$secret_client = "wezXLgiseeeKCz0W6KnnKQoteVt1wbT7" #Está no keycloak no client criado "kong"
+$secret_client = "VJgP3NXKhZxyHWpBh0FXGDSiwzbAkQQl" #Está no keycloak no client criado "kong"
 
 $uri = "http://localhost:8001/plugins"
 
@@ -200,7 +200,49 @@ Write-Output $formattedResponse
 
 ```
 
+Caso positivo, sua repostas será um arquivo JSON com estes campos.
+
+```Json
+{
+    "enabled":  true,
+    "consumer":  null,
+    "tags":  null,
+    "created_at":  1722201726,
+    "service":  null,
+    "config":  {
+                   "client_id":  "kong",
+                   "client_secret":  "VJgP3NXKhZxyHWpBh0FXGDSiwzbAkQQl",
+                   "discovery":  "http://192.168.100.15:8180/realms/master/.well-known/openid-configuration",
+                   "introspection_endpoint_auth_method":  null,
+                   "redirect_uri_path":  null,
+                   "response_type":  "code",
+                   "token_endpoint_auth_method":  "client_secret_post",
+                   "logout_path":  "/logout",
+                   "redirect_after_logout_uri":  "/",
+                   "session_secret":  null,
+                   "scope":  "openid",
+                   "introspection_endpoint":  null,
+                   "recovery_page_path":  null,
+                   "bearer_only":  "no",
+                   "realm":  "kong",
+                   "filters":  null,
+                   "ssl_verify":  "no"
+               },
+    "protocols":  [
+                      "grpc",
+                      "grpcs",
+                      "http",
+                      "https"
+                  ],
+    "id":  "7cd84221-330f-4b03-bb0c-891abfbcf818",
+    "name":  "oidc",
+    "route":  null
+}
+```
+
 ### Conexão
+
+Para verificar se a credencial está funcionando via CLI, execute
 
 ```CLI
 # Execute uma linha por vez
@@ -224,6 +266,63 @@ $cookies | ForEach-Object {
 
 ```
 
+Você tera a saida em um objeto PowerShell semelhante a este:
+
+```PowerShell
+StatusCode        : 200
+StatusDescription : OK
+Content           : <!DOCTYPE html>
+                    <html class="login-pf">
+
+                    <head>
+                        <meta charset="utf-8">
+                        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+                        <meta name="robots" content="noindex, nofollow"...
+RawContent        : HTTP/1.1 200 OK
+                    Referrer-Policy: no-referrer
+                    X-Frame-Options: SAMEORIGIN
+                    Strict-Transport-Security: max-age=31536000; includeSubDomains
+                    X-Robots-Tag: none
+                    X-Content-Type-Options: nosniff
+                    Content...
+Forms             : {kc-form-login}
+Headers           : {[Referrer-Policy, no-referrer], [X-Frame-Options, SAMEORIGIN], [Strict-Transport-Security, max-age=31536000; includeSubDomains], [X-Robots-Tag, none]...}
+Images            : {}
+InputFields       : {@{innerHTML=; innerText=; outerHTML=<INPUT tabIndex=1 id=username class=pf-c-form-control aria-invalid="" name=username autocomplete="off" autofocus>; outerText=; tagName=INPUT; tabIndex=1; id=username;
+                    class=pf-c-form-control; aria-invalid=; name=username; autocomplete=off; autofocus=}, @{innerHTML=; innerText=; outerHTML=<INPUT tabIndex=2 id=password class=pf-c-form-control aria-invalid="" type=password value=""
+                    name=password autocomplete="off">; outerText=; tagName=INPUT; tabIndex=2; id=password; class=pf-c-form-control; aria-invalid=; type=password; value=; name=password; autocomplete=off}, @{innerHTML=; innerText=;
+                    outerHTML=<INPUT id=id-hidden-input type=hidden name=credentialId>; outerText=; tagName=INPUT; id=id-hidden-input; type=hidden; name=credentialId}, @{innerHTML=; innerText=; outerHTML=<INPUT tabIndex=4 id=kc-login
+                    class="pf-c-button pf-m-primary pf-m-block btn-lg" type=submit value="Sign In" name=login>; outerText=; tagName=INPUT; tabIndex=4; id=kc-login; class=pf-c-button pf-m-primary pf-m-block btn-lg; type=submit; value=Sign In;    
+                    name=login}}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 3537
+```
+
 ### Insomnia
 
-Como ao tentar mockar via mockbin não foi possível, é apresentado no site uma alternativa chamada Insomnia. É um app para realizar mockagens para endpoins e fazer requisições HTTP para testar APIs (Estilo PostMan). Baixe o [Insomnia](https://insomnia.rest/download) no site oficial e instale no seu SO.
+Como ao tentar mockar via mockbin não foi possível, é apresentado no site uma alternativa chamada Insomnia. É um app para realizar mockagens para endpoins e fazer requisições HTTP para testar APIs (Estilo PostMan). Baixe o [Insomnia](https://insomnia.rest/download) no site oficial e instale no seu SO. Após instalar, na tela inicial, clique em "*Create*" e clique em collections
+
+![tela inicial](./readme/images/kong_initial.png)
+
+![collections](./readme/images/collections.png)
+
+Nomeie sua coleção de requests, e você redirecionado a esta seguinte tela apresentada na primeira imagem abaixo. Clique em "New HTTP Request" ou pressione "Ctrl + N".
+
+![Nova coleção](./readme/images/new_collection.png)
+
+![collections](./readme/images/new_request.png)
+
+Para testar se o login está sendo realizado, vá em seu browser, e digite o[ endereço de conexão do kong](http://localhost:8000/anything) (se você está seguindo este exemplo à risca, é só clicar no hyperlink). Você será redicionado a pagina de login do keycloak de autenticação (novamente, se tiver seguindo a risca este exemplo o link de redirecionamento será http://{seu_ip}:8180/realms/master/protocol/openid-connect/auth). Troque o endpoint por "*token*" e digite na barra de url da sua requisição do Insomnia.
+
+![Requisição](./readme/images/url_requisition.png)
+
+Então, clique em body, e adicione as variáveis: *client_id*, *grant_type*, *client_secret*, *username* e *password*. Mude o tipo de requisição para POST onde a seta vermelha está indicando, e clique em send na seta amarela. Se tudo estiver correto, sua requisição receberá resultado 200.
+
+![Modificando requisição](./readme/images/modifiy_requisition.png)
+
+![Requisição OK](./readme/images/requisition_ok.png)
+
+Se algo estiver errado, como os valores de credenciais do usuário, você receberá erro 401 ou 403.
+![Requisição ruim](./readme/images/bad_requisition.png)
+
